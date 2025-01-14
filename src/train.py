@@ -25,28 +25,22 @@ class Deterministic_DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p=0.3),
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p=0.2),
-            nn.Linear(layer, layer),
-            nn.ReLU(),
-            
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p=0.2),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p=0.3),
+            nn.Linear(layer, layer),
+            nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, output)
             )
-        # Apply weight initialization
         self._initialize_weights()
 
     def forward(self, x):
@@ -54,10 +48,6 @@ class Deterministic_DQN(nn.Module):
         return x
 
     def _initialize_weights(self):
-        """
-        Initialize weights of the model using a random distribution.
-        You can customize this to use specific initializations like Xavier or He initialization.
-        """
         for layer in self.modules():
             if isinstance(layer, nn.Linear):
                 nn.init.kaiming_uniform_(layer.weight, nonlinearity='relu')
@@ -76,20 +66,14 @@ class Stochastic_DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p = 0.2),
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, layer),
             nn.ReLU(),
-            # nn.Dropout(p = 0.2),
-            # nn.Linear(layer, 512),
-            # nn.ReLU(),
-
             nn.Linear(layer, layer),
             nn.ReLU(),
-            
             nn.Linear(layer, layer),
             nn.ReLU(),
             nn.Linear(layer, layer),
@@ -99,35 +83,21 @@ class Stochastic_DQN(nn.Module):
             )
         self.mu_layer = nn.Linear(layer, output)
         self.std_layer = nn.Linear(layer, output)
-        # Apply weight initialization
         self._initialize_weights()
 
     def forward(self, x):
         x = self.fc(x)
-        # x = F.relu(self.linear_input(x))
-        # print("x1", x.shape)
-        # x = F.relu(self.linear_normal(x))
-        # print("x2", x.shape)
-        # x = self.batch_norm(x)
-        # print("batch norm", x.shape)
         mu = self.mu_layer(x)
         log_std = self.std_layer(x)
         std = F.softplus(log_std) 
-        # std = torch.exp(log_std) 
         return mu, std
     
     def sample_action(self, x):
-        mu, std = self(x)
-        # print("sample", log_std)
-        # std = torch.exp(log_std) 
+        mu, std = self(x) 
         action = mu + torch.randn_like(mu) * std
         return action
 
     def _initialize_weights(self):
-        """
-        Initialize weights of the model using a random distribution.
-        You can customize this to use specific initializations like Xavier or He initialization.
-        """
         for layer in self.modules():
             if isinstance(layer, nn.Linear):
                 nn.init.kaiming_uniform_(layer.weight, nonlinearity='relu')
@@ -136,14 +106,13 @@ class Stochastic_DQN(nn.Module):
     
 class ReplayBuffer:
     def __init__(self, capacity, device):
-        self.capacity = int(capacity) # capacity of the buffer
+        self.capacity = int(capacity) 
         self.data = []
-        self.index = 0 # index of the next cell to be filled
+        self.index = 0
         self.device = device
     def append(self, s, a, r, s_, d):
         if len(self.data) < self.capacity:
             self.data.append(None)
-        # s, a, r, s_, d = torch.Tensor(s.to(self.device), a.to(self.device), r.to(self.device), s_.to(self.device), d.to(self.device)
         self.data[self.index] = (s, a, r, s_, d)
         self.index = (self.index + 1) % self.capacity
     def sample(self, batch_size):
@@ -155,13 +124,6 @@ class ReplayBuffer:
 
 env = TimeLimit(env=HIVPatient(domain_randomization=False), max_episode_steps=200)  
 env = TimeLimit(env=FastHIVPatient(domain_randomization=True), max_episode_steps=200)  
-
-# The time wrapper limits the number of steps in an episode at 200.
-# Now is the floor is yours to implement the agent and train it.
-
-# You have to implement your own agent.
-# Don't modify the methods names and signatures, but you can add methods.
-# ENJOY!
 
 class ProjectAgent:
     config = {
@@ -197,7 +159,7 @@ class ProjectAgent:
         self.max_episode = self.config['max_episode']
         self.gamma = self.config['gamma']
         self.batch_size = self.config['batch_size']
-        self.memory = ReplayBuffer(self.config['buffer_size'], self.device) # self.max_episode
+        self.memory = ReplayBuffer(self.config['buffer_size'], self.device)
         self.lr = self.config['learning_rate']
         self.epsilon_max = self.config['epsilon_max']
         self.epsilon_min = self.config['epsilon_min']
@@ -211,9 +173,7 @@ class ProjectAgent:
         if self.deterministic == True:
             self.criterion = torch.nn.SmoothL1Loss()
         else:
-            # self.criterion = self.gaussian_nll_loss
             self.criterion = torch.nn.SmoothL1Loss()
-            # self.criterion = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model_policy.parameters(), lr= self.lr)
         self.epsilon_seuil = self.config["epsilon_seuil"]
         self.scheduler  = ReduceLROnPlateau(self.optimizer, mode='max', factor=0.5, patience=self.patience, verbose= True)
@@ -235,10 +195,7 @@ class ProjectAgent:
         self.episode_seuil += self.explore_episodes
 
     def gaussian_nll_loss(self, mu, std, target):
-        """
-        Negative Log-Likelihood loss for a Gaussian distribution.
-        """
-        var = std ** 2  # Variance
+        var = std ** 2  
         nll = 0.5 * torch.log(2 * torch.pi * var) + ((target - mu) ** 2) / (2 * var)
         return torch.mean(nll)
 
@@ -250,13 +207,8 @@ class ProjectAgent:
         
     def Bayesian_TS(self, observation):
         observation = torch.Tensor(observation).unsqueeze(0).to(self.device)
-        # self.model_policy.eval()
         mu, std = self.model_policy(observation) 
-        # self.model_policy.train()
         Q_sample = mu + torch.randn_like(mu) * std
-        # print("mu", mu.cpu().detach().numpy())
-        # print("std", (torch.randn_like(mu) * std).cpu().detach().numpy())
-        # print('Q sample', Q_sample.cpu().detach().numpy())
         self.var = torch.mean(std)
         self.mu = torch.mean(mu)
         return torch.argmax(Q_sample).item()
@@ -283,16 +235,10 @@ class ProjectAgent:
             if use_random==True:
                 action = env.action_space.sample()
                 return action
-            # else:
-            #     # print("Bayesian")
-            #     action = self.Bayesian_TS(observation)
-            #     return action  
         
-    def gradient_step(self, double_dqn): #, step, episode
+    def gradient_step(self, double_dqn): 
         start_sampling = time.perf_counter()
-        X, A, R, Y, D  = self.memory.sample(self.batch_size) # , step, episode
-        # print(X.shape, A.shape, R.shape, Y.shape, D.shape)
-  
+        X, A, R, Y, D  = self.memory.sample(self.batch_size) 
         X, A, R, Y, D = X.to(self.device, non_blocking=True), A.to(self.device, non_blocking=True), R.to(self.device, non_blocking=True), Y.to(self.device, non_blocking=True), D.to(self.device, non_blocking=True)
         R = torch.sign(R) * torch.log(1 + torch.abs(R))
         X = torch.sign(X) * torch.log(1 + torch.abs(X))
@@ -301,7 +247,7 @@ class ProjectAgent:
         
         if self.deterministic == True:
             if double_dqn :
-                next_actions = self.model_policy(Y).argmax(dim=1)  # Actions with the highest Q-value
+                next_actions = self.model_policy(Y).argmax(dim=1)  
                 QY_next = self.model_target(Y).gather(1, next_actions.unsqueeze(1)).squeeze(1).detach()
                 update = R + self.gamma * QY_next * (1 - D)
                 QXA = self.model_policy(X).gather(1, A.to(torch.long).squeeze(1)).unsqueeze(1)
@@ -321,35 +267,21 @@ class ProjectAgent:
             else:
                 QYmax = self.model_target.sample_action(Y).max(1)[0].detach()
                 update = torch.addcmul(R, 1-D, QYmax, value=self.gamma)
-                # mu, std = self.model_policy(X)
-              
-                # mu = mu.gather(1, A.to(torch.long).unsqueeze(1))
-                # loss = self.criterion(mu, std, update.unsqueeze(1))
-                # print(f" X_moy {X.mean().item():2.3f}, X_min {X.min().item():2.3f}, X_max {X.max().item():2.3f}, T_moy {Y.mean().item():2.3f}, T_min {Y.min().item():2.3f}, T_max {Y.max().item():2.3f}, R_moy {R.mean().item():2.3f}, R_min {R.min().item():2.3f}, R_max {R.max().item():2.3f}")
-
-                # print(f"mu: {mu.mean().item()}, std: {std.mean().item()}, update: {update.mean().item()}, loss : {loss.item()}, X {X.mean().item()}, T {Y.mean().item()}, R {R.mean().item()},")
-
 
                 QXA = self.model_policy.sample_action(X).gather(1, A.to(torch.long).unsqueeze(1))
                 loss = self.criterion(QXA, update.unsqueeze(1))
-
-                # print(f"QXA : {QXA.mean().item()}, update: {update.mean().item()}, loss : {loss.item()}, X {X.mean().item()}, T {Y.mean().item()}, R {R.mean().item()},")
-
-        # self.model_policy.train()
         
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step() 
         
-        # self.model_policy.eval()
 
-# Custom function for scaling learning rate
     
     def early_stop(self, best_score):
 
         if self.compteur_stop == int(self.max_gradient_steps*self.patience) +2:
             return True
-        if abs(best_score - self.previous_best) < 1.1: # Because both values are not strictly equal
+        if abs(best_score - self.previous_best) < 1.1:
             self.compteur_stop += 1
         else:
             self.compteur_stop = 0
@@ -357,9 +289,9 @@ class ProjectAgent:
         return False
         
     def gradient_steps_calculation(self, episode):
-        k = 2  # Adjust scaling factor for exponential steepness
-        min_steps = 1  # Minimum number of gradient steps
-        max_steps = self.max_gradient_steps  # Maximum number of gradient steps
+        k = 2  
+        min_steps = 1  
+        max_steps = self.max_gradient_steps 
         if self.deterministic == True:
             if self.epsilon >0.55:
                 return 1
@@ -370,8 +302,7 @@ class ProjectAgent:
             else:
                 if self.compteur_stop % self.patience == 0  and self.compteur_stop !=0 and self.gradient_steps !=1:
                     self.gradient_steps = self.gradient_steps -1
-            #     scale = 1- np.exp(-k * (self.epsilon - self.epsilon_min) / (self.epsilon_seuil - self.epsilon_min))
-            # self.gradient_steps =  int(min_steps + (max_steps - min_steps) * scale)
+
         else:
             if episode < self.explore_episodes:
                 self.gradient_steps = 0
@@ -379,7 +310,6 @@ class ProjectAgent:
                 scale = 1-np.exp(-k * (episode - self.explore_episodes) / (self.episode_seuil - self.explore_episodes))
                 self.gradient_steps = int(min_steps + (max_steps) * scale)
             else:
-                # print("compteur stop", self.compteur_stop, "division", self.compteur_stop % self.patience, "patience", self.patience)
                 if self.compteur_stop % self.patience == 0  and self.compteur_stop !=0 and self.gradient_steps !=1:
                     self.gradient_steps = self.gradient_steps -1
 
@@ -388,14 +318,9 @@ class ProjectAgent:
         episode_return, var_return = [], []
         state, _ = env.reset()
         episode_cum_reward = 0
-        best_score = 0
-        # env_duration = 0
-        
+        best_score = 0        
         cumulated_var = 0
         cumulated_mu = 0
-
-
-        # state = np.sign(state)*np.log(1+np.abs(state))
 
         while episode < self.max_episode:
 
@@ -411,26 +336,20 @@ class ProjectAgent:
             else:
                 use_random = True
 
-
-            # Observation vs exploitation
             if self.deterministic == True:
                 action = self.act(state, use_random=use_random)
             else:
                 action = self.act(state, use_random=use_random)
             
-            # Step
-            
             next_state, reward, done, trunc, _ = env.step(action)
-            # next_state = np.sign(next_state)*np.log(1+np.abs(next_state))
-            # env_start = time.perf_counter()
-            self.memory.append(state , action, reward,next_state, trunc) # ,episode
-            # env_duration += time.perf_counter() - env_start
+
+            self.memory.append(state , action, reward,next_state, trunc) 
+            
             episode_cum_reward += reward
             
             cumulated_var += self.var
             cumulated_mu += self.mu
-            # print("cumulated_var, cumulated_mu", cumulated_var.item(), cumulated_mu.item())
-            # Train
+
             if trunc == True:
                 self.gradient_steps_calculation(episode)
             
@@ -462,7 +381,7 @@ class ProjectAgent:
                 episode += 1
                 episode_return.append(episode_cum_reward)
                 var_return.append(cumulated_var)
-                if best_score > 8000000000 :  #5000000000
+                if best_score > 8000000000 :  
 
                     self.model_policy.eval()
                     validation_score_hiv = evaluate_HIV(agent=self, nb_episode=5)
@@ -499,7 +418,6 @@ class ProjectAgent:
                 self.batch_time = 0
                 env_duration = 0
                 state, _ = env.reset()
-                # state = np.sign(state)*np.log(1+np.abs(state))
 
 
 
@@ -515,12 +433,12 @@ class ProjectAgent:
 
 
     def save(self, path):
-        os.makedirs(path, exist_ok=True)  # Create the directory if it doesn't exist
-        torch.save(self.model_policy.state_dict(), os.path.join(path, "new_lr.pth"))
-        print(f"Model saved to {os.path.join(path, 'new_lr.pth')}")
+        os.makedirs(path, exist_ok=True)  
+        torch.save(self.model_policy.state_dict(), os.path.join(path, "model.pth"))
+        print(f"Model saved to {os.path.join(path, 'model.pth')}")
 
     def load(self):
-        file_path = os.path.join(os.getcwd(), 'src/policy', 'new_lr.pth')
+        file_path = os.path.join(os.getcwd(), 'src/policy', 'model.pth')
         print(file_path)
 
         self.model_policy.load_state_dict(torch.load(file_path, map_location=torch.device('cuda'))) #cuda
