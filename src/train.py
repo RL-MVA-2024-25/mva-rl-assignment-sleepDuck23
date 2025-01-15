@@ -441,7 +441,14 @@ class ProjectAgent:
         file_path = os.path.join(os.getcwd(), 'model.pth')
         print(file_path)
 
-        self.model_policy.load_state_dict(torch.load(file_path, map_location=torch.device('cuda'))) #cuda
+        #self.model_policy.load_state_dict(torch.load(file_path, map_location=torch.device('cuda'))) #cuda
+
+        # Determine the device: GPU if available, otherwise CPU
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        # Load the model to the appropriate device
+        self.model_policy.load_state_dict(torch.load(file_path, map_location=device))
+
         self.model_policy.eval()
         print(f"Model loaded from {file_path}")
         return 
