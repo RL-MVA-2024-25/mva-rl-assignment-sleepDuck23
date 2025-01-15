@@ -438,7 +438,7 @@ class ProjectAgent:
         print(f"Model saved to {os.path.join(path, 'model.pth')}")
 
     def load(self):
-        file_path = os.path.join(os.getcwd(), 'policy', 'model.pth')
+        file_path = os.path.join(os.getcwd(), 'model.pth')
         print(file_path)
 
         self.model_policy.load_state_dict(torch.load(file_path, map_location=torch.device('cuda'))) #cuda
