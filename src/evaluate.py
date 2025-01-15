@@ -2,8 +2,7 @@ from statistics import mean
 from functools import partial
 import gymnasium as gym
 from gymnasium.wrappers import TimeLimit
-from fast_env import FastHIVPatient
-
+#from fast_env import FastHIVPatient
 from env_hiv import HIVPatient
 from interface import Agent
 
@@ -34,22 +33,22 @@ def evaluate_agent(agent: Agent, env: gym.Env, nb_episode: int = 10) -> float:
     return mean(rewards)
 
 
+#evaluate_HIV = partial(
+#    evaluate_agent, env=TimeLimit(FastHIVPatient(), max_episode_steps=200)
+#)
+#
+#
+#evaluate_HIV_population = partial(
+#    evaluate_agent,
+#    env=TimeLimit(FastHIVPatient(domain_randomization=True), max_episode_steps=200),  # For faster training
+#)
+
 evaluate_HIV = partial(
-    evaluate_agent, env=TimeLimit(FastHIVPatient(), max_episode_steps=200)
+    evaluate_agent, env=TimeLimit(HIVPatient(), max_episode_steps=200)
 )
 
 
 evaluate_HIV_population = partial(
     evaluate_agent,
-    env=TimeLimit(FastHIVPatient(domain_randomization=True), max_episode_steps=200),  # For faster training
+    env=TimeLimit(HIVPatient(domain_randomization=True), max_episode_steps=200),
 )
-
-# evaluate_HIV = partial(
-#     evaluate_agent, env=TimeLimit(HIVPatient(), max_episode_steps=200)
-# )
-
-
-# evaluate_HIV_population = partial(
-#     evaluate_agent,
-#     env=TimeLimit(HIVPatient(domain_randomization=True), max_episode_steps=200),
-# )

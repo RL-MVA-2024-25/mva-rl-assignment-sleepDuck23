@@ -1,6 +1,6 @@
 from gymnasium.wrappers import TimeLimit
 from env_hiv import HIVPatient
-from fast_env import FastHIVPatient
+#from fast_env import FastHIVPatient
 import random
 import torch
 import torch.nn as nn
@@ -123,7 +123,7 @@ class ReplayBuffer:
 
 
 env = TimeLimit(env=HIVPatient(domain_randomization=False), max_episode_steps=200)  
-env = TimeLimit(env=FastHIVPatient(domain_randomization=True), max_episode_steps=200)  
+#env = TimeLimit(env=FastHIVPatient(domain_randomization=True), max_episode_steps=200)  
 
 class ProjectAgent:
     config = {
